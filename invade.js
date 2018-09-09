@@ -80,6 +80,9 @@ function handleCollision (element, axis, target = 1) {
   }
 
   if (element.type === 2) {
+    if (target === 3) {
+      strikeDetected(element.offset.y)
+    }
     element.destroy = true
   }
 
@@ -120,6 +123,19 @@ function checkForBottomImpact (element) {
   // How?
 }
 
+function strikeDetected(loc) {
+  for (let i = 0; i < nextBodies.length; i++) {
+    let e = nextBodies[i]
+    let [o, m] = [e.offset, e.matrix]
+    for (let y = 0; y < m.length; y++) {
+      for (let x = 0; x < m[0].length; x++) {
+        if (m[y][x] && o.x + x === loc.x && o.y + y === loc.y) {
+          e.destroy = true
+        }
+      }
+    }
+  }
+}
 
 
 
@@ -155,7 +171,7 @@ function shoot(element) {
     velocity: 1
   }
 
-  nextElements.push(bullet)
+  nextBullets.push(bullet)
 
   gunEnabled = false
   setTimeout(() => {
@@ -164,7 +180,7 @@ function shoot(element) {
 }
 
 function createAlien (name, offset) {
-  nextElements.push({
+  nextBodies.push({
     type: 3,
     destroy: false,
     matrix: shapes[name],
@@ -176,34 +192,40 @@ function createAlien (name, offset) {
 }
 
 let gunEnabled = true
-let currentElements = []
-let nextElements = []
+let currentBodies = []
+let nextBodies = []
+let currentBullets = []
+let nextBullets = []
 
 
-function advanceElements () {
-  let len = currentElements.length
+function advanceElements (current, next) {
+  let len = current.length
 
   for (let i = 0; i < len; i++) {
-    let e = currentElements[i]
+    let e = current[i]
     e.offset.y += e.direction.y * e.velocity
     e.offset.x += e.direction.x * e.velocity
 
     collides(e)
-    if (e.type === 3) {
-      checkForBottomImpact(e)
-    }
 
     if (!e.destroy) {
-      nextElements.push(e)
+      next.push(e)
     }
   }
 }
 
 function assembleArena() {
   addToArena(player)
-  advanceElements()
-  for (let i = 0; i < nextElements.length; i++) {
-    addToArena(nextElements[i])
+  createAlien('fighter', {x: 0, y: 0})
+
+  advanceElements(currentBodies, nextBodies)
+  for (let i = 0; i < nextBodies.length; i++) {
+    addToArena(nextBodies[i])
+  }
+
+  advanceElements(currentBullets, nextBullets)
+  for (let i = 0; i < nextBullets.length; i++) {
+    addToArena(nextBullets[i])
   }
 }
 
@@ -233,14 +255,19 @@ window.onkeyup = e => {
 function updateCanvas() {
   context.fillStyle = "#000"
   context.fillRect(0, 0, canvas.width, canvas.height)
-
   arena = createArena(83, 117)
   checkKeys()
   assembleArena()
   drawMatrix(arena, {x: 0, y: 0})
-  currentElements = nextElements
-  nextElements = []
+  resetElements()
   requestAnimationFrame(updateCanvas)
+}
+
+function resetElements() {
+  currentBodies = nextBodies
+  nextBodies = []
+  currentBullets = nextBullets
+  nextBullets = []
 }
 
 let player = {
