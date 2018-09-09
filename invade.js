@@ -47,12 +47,12 @@ function createArena (w, h) {
   return arena
 }
 
-function addToArena(piece) {
-  piece.matrix.forEach((row, y) => {
+function addToArena(element) {
+  element.matrix.forEach((row, y) => {
     row.forEach((value, x) => {
-      let arenaPos = arena[y + piece.offset.y][x + piece.offset.x]
+      let arenaPos = arena[y + element.offset.y][x + element.offset.x]
       if (value !== 0) {
-        arena[y + piece.offset.y][x + piece.offset.x] = piece.matrix[y][x] * piece.type
+        arena[y + element.offset.y][x + element.offset.x] = element.matrix[y][x] * element.type
       }
     })
   })
@@ -62,47 +62,52 @@ function addToArena(piece) {
 
 // Collision logic
 
-function handleCollision (piece, axis, target = 1) {
-  if (piece.type === 1) return
+function handleCollision (element, axis, target = 1) {
+  if (element.type === 1) return
 
   if (axis === "x") {
-    if (piece.direction.x < 0) {
+    if (element.direction.x < 0) {
       var side = "left"
     } else {
       var side = "right"
     }
   } else {
-    if (piece.direction.y < 0) {
+    if (element.direction.y < 0) {
       var side = "bottom"
     } else {
       var side = "top"
     }
   }
 
-  if (piece.type === 2) {
-    piece.destroy = true
+  if (element.type === 2) {
+    element.destroy = true
   }
 
-  if (piece.type === 3) {
+  if (element.type === 3) {
+    if (target === 2) {
+      element.health -= 1
+      if (element.health < 1) {
+        element.destroy = true
+      }
+    }
     if (side === "bottom") {
       // Game Over
     } else if (side === "left" || side === "right") {
-      piece.direction.x = piece.direction.x * -1
+      element.direction.x = element.direction.x * -1
     }
   }
 }
 
-
-function collides (piece) {
-  let [m, o] = [piece.matrix, piece.offset]
+function collides (element) {
+  let [m, o] = [element.matrix, element.offset]
   for (let y = 0; y < m.length; ++y) {
     for (let x = 0; x < m[y].length; ++x) {
       if (!arena[o.y + y]) {
-        handleCollision(piece, 'y', target)
+        handleCollision(element, 'y')
         return true
       }
       if (arena[o.y + y][o.x + x] !== 0) {
-        handleCollision(piece, 'x', target)
+        handleCollision(element, 'x', arena[o.y + y][o.x + x])
         return true
       }
     }
@@ -110,6 +115,10 @@ function collides (piece) {
   return false
 }
 
+
+function checkForBottomImpact (element) {
+  // How?
+}
 
 
 
@@ -125,18 +134,18 @@ function drawMatrix(matrix, offset) {
   })
 }
 
-function move(piece, axis, amount) {
-  let offset = piece.offset[axis]
-  piece.offset[axis] += amount
-  if (collides(piece)) {
-    piece.offset[axis] = offset
+function move(element, axis, amount) {
+  let offset = element.offset[axis]
+  element.offset[axis] += amount
+  if (collides(element)) {
+    element.offset[axis] = offset
   }
 }
 
-function shoot(piece) {
+function shoot(element) {
   if (!gunEnabled) return
-  let x = piece.offset.x + 2
-  let y = piece.offset.y
+  let x = element.offset.x + 2
+  let y = element.offset.y
   let bullet = {
     type: 2,
     destroy: false,
@@ -161,7 +170,8 @@ function createAlien (name, offset) {
     matrix: shapes[name],
     offset: offset,
     direction: {x: 1, y: 0},
-    velocity: 1
+    velocity: 0,
+    health: 4
   })
 }
 
@@ -179,6 +189,9 @@ function advanceElements () {
     e.offset.x += e.direction.x * e.velocity
 
     collides(e)
+    if (e.type === 3) {
+      checkForBottomImpact(e)
+    }
 
     if (!e.destroy) {
       nextElements.push(e)
