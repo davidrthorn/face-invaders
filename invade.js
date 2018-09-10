@@ -50,7 +50,11 @@ function createArena (w, h) {
 function addToArena(element) {
   element.matrix.forEach((row, y) => {
     row.forEach((value, x) => {
-      let arenaPos = arena[y + element.offset.y][x + element.offset.x]
+      let target = arena[y + element.offset.y][x + element.offset.x] 
+      if (element.type === 3 && target === 2) {
+        harmBody(element)
+        destroyBullet(y + element.offset.y, x + element.offset.x)
+      }
       if (value !== 0) {
         arena[y + element.offset.y][x + element.offset.x] = element.matrix[y][x] * element.type
       }
@@ -58,6 +62,22 @@ function addToArena(element) {
   })
 }
 
+function harmBody(body) {
+  if (body.health === 1) {
+    body.destroy = true
+  } else {
+    body.health -= 1
+  }
+}
+
+function destroyBullet(y, x){
+  for (let i = 0; i < nextBullets.length; i++) {
+    let bullet = nextBullets[i]
+    if (bullet.offset.y === y && bullet.offset.x === x) {
+      bullet.destroy = true
+    }
+  }
+}
 
 
 // Collision logic
@@ -80,19 +100,10 @@ function handleCollision (element, axis, target = 1) {
   }
 
   if (element.type === 2) {
-    if (target === 3) {
-      strikeDetected(element.offset.y)
-    }
     element.destroy = true
   }
 
   if (element.type === 3) {
-    if (target === 2) {
-      element.health -= 1
-      if (element.health < 1) {
-        element.destroy = true
-      }
-    }
     if (side === "bottom") {
       // Game Over
     } else if (side === "left" || side === "right") {
@@ -117,26 +128,6 @@ function collides (element) {
   }
   return false
 }
-
-
-function checkForBottomImpact (element) {
-  // How?
-}
-
-function strikeDetected(loc) {
-  for (let i = 0; i < nextBodies.length; i++) {
-    let e = nextBodies[i]
-    let [o, m] = [e.offset, e.matrix]
-    for (let y = 0; y < m.length; y++) {
-      for (let x = 0; x < m[0].length; x++) {
-        if (m[y][x] && o.x + x === loc.x && o.y + y === loc.y) {
-          e.destroy = true
-        }
-      }
-    }
-  }
-}
-
 
 
 function drawMatrix(matrix, offset) {
@@ -186,7 +177,7 @@ function createAlien (name, offset) {
     matrix: shapes[name],
     offset: offset,
     direction: {x: 1, y: 0},
-    velocity: 0,
+    velocity: 1,
     health: 4
   })
 }
@@ -216,16 +207,13 @@ function advanceElements (current, next) {
 
 function assembleArena() {
   addToArena(player)
-  createAlien('fighter', {x: 0, y: 0})
-
-  advanceElements(currentBodies, nextBodies)
-  for (let i = 0; i < nextBodies.length; i++) {
-    addToArena(nextBodies[i])
-  }
-
   advanceElements(currentBullets, nextBullets)
   for (let i = 0; i < nextBullets.length; i++) {
     addToArena(nextBullets[i])
+  }
+  advanceElements(currentBodies, nextBodies)
+  for (let i = 0; i < nextBodies.length; i++) {
+    addToArena(nextBodies[i])
   }
 }
 
