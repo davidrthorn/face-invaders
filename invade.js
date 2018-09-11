@@ -1,3 +1,10 @@
+/*
+ *
+ * 1. Randomised movement
+ * 2. Reaction to bullet
+ *
+ *
+*/
 const canvas = document.getElementById("invade")
 const context = canvas.getContext("2d")
 
@@ -72,7 +79,15 @@ function harmBody(body) {
     body.destroy = true
   } else {
     body.health -= 1
+    body.stateCounter = 32
   }
+}
+
+function recoil(body) {
+  if (body.stateCounter % 4){
+    body.matrix.reverse()
+  }
+  body.stateCounter -= 1
 }
 
 function destroyBullet(y, x){
@@ -185,7 +200,8 @@ function createAlien (name, offset) {
     offset: offset,
     direction: {x: 1, y: 0},
     velocity: 2,
-    health: 4
+    health: 4,
+    stateCounter: 0
   })
 }
 
@@ -207,7 +223,9 @@ function advanceElements (current, next) {
     }
 
     atEdge(e)
-
+    if (e.stateCounter) {
+      recoil(e)
+    }
     if (!e.destroy) {
       next.push(e)
     }
