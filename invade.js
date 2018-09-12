@@ -57,9 +57,6 @@ function createArena (w, h) {
 
 function addToArena(e) {
   [m, o] = [e.matrix, e.offset]
-  if (e.type === 3) {
-    // console.log(o)
-  }
   m.forEach((row, y) => {
     row.forEach((value, x) => {
       let target = arena[y + o.y][x + o.x] 
@@ -75,12 +72,8 @@ function addToArena(e) {
 }
 
 function harmBody(body) {
-  if (body.health === 1) {
-    body.destroy = true
-  } else {
     body.health -= 1
-    body.stateCounter = 32
-  }
+    body.stateCounter = 24
 }
 
 function recoil(body) {
@@ -88,6 +81,12 @@ function recoil(body) {
     body.matrix.reverse()
   }
   body.stateCounter -= 1
+  if (body.health < 1) {
+    body.velocity = 0
+    if (!body.stateCounter) {
+      body.destroy = true
+    }
+  }
 }
 
 function destroyBullet(y, x){
@@ -192,17 +191,20 @@ function shoot(element) {
   }, 100)
 }
 
+function Alien (name, offset, direction={x: 1, y: 0}) {
+  this.type = 3
+  this.matrix = shapes[name].slice()
+  this.destroy = false
+  this.offset = offset
+  this.direction = direction
+  this.health = 4
+  this.stateCounter = 0
+  this.velocity = 1
+}
+
 function createAlien (name, offset) {
-  nextBodies.push({
-    type: 3,
-    destroy: false,
-    matrix: shapes[name],
-    offset: offset,
-    direction: {x: 1, y: 0},
-    velocity: 2,
-    health: 4,
-    stateCounter: 0
-  })
+  nextBodies.push(new Alien(name, offset)
+  )
 }
 
 let gunEnabled = true
